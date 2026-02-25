@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Spin & Win Rewards</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Poppins',sans-serif}
+body{
+  background:linear-gradient(135deg,#ff4d6d,#ffd60a,#4cc9f0,#b5179e);
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:15px;
+}
+
+h1{color:#fff;font-size:22px;margin-bottom:15px;text-align:center;font-weight:800}
+
+.container{
+  width:100%;
+  max-width:380px;
+  background:#fff;
+  border-radius:20px;
+  padding:15px;
+  box-shadow:0 15px 35px rgba(0,0,0,0.3);
+  text-align:center;
+  position:relative;
+}
+
+#wheelWrapper{position:relative;width:100%;max-width:300px;margin:0 auto}
+#wheelCanvas{width:100%;height:auto}
+
+.pointer{
+  position:absolute;
+  top:-10px;
+  left:50%;
+  transform:translateX(-50%);
+  width:0;height:0;
+  border-left:12px solid transparent;
+  border-right:12px solid transparent;
+  border-bottom:20px solid #000;
+  z-index:10;
+}
+
+button{
+  margin-top:12px;
+  padding:12px;
+  border:none;
+  border-radius:30px;
+  font-size:15px;
+  font-weight:600;
+  cursor:pointer;
+  width:100%;
+}
+
+.spin-btn{background:#ff4d6d;color:#fff}
+.share-btn{background:#1877f2;color:#fff;display:none}
+.claim-btn{background:#06d6a0;color:#fff;display:none}
+
+.reward-display{margin-top:10px;display:none}
+.reward-display img{width:90px;margin:10px auto;display:block}
+
+.shake{animation:shake 0.5s}
+@keyframes shake{
+  0%{transform:translateX(0)}
+  25%{transform:translateX(-5px)}
+  50%{transform:translateX(5px)}
+  75%{transform:translateX(-5px)}
+  100%{transform:translateX(0)}
+}
+
+#countdown{
+  background:#ff0000;color:#fff;padding:8px;border-radius:10px;margin-bottom:10px;font-weight:700;font-size:14px
+}
+
+@media(max-width:400px){h1{font-size:18px}}
+</style>
+</head>
+<body>
+
+<h1>🎉 SPIN & WIN 🎉</h1>
+
+<div class="container" id="mainContainer">
+  <div id="countdown">⚡ Offer Expires In: <span id="timer">05:00</span></div>
+
+  <div id="wheelWrapper">
+    <div class="pointer"></div>
+    <canvas id="wheelCanvas" width="300" height="300"></canvas>
+  </div>
+
+  <div class="reward-display" id="rewardDisplay">
+    <h3 id="rewardText"></h3>
+    <img id="rewardImage" src="" alt="reward">
+  </div>
+
+  <button class="spin-btn" onclick="spinWheel()">SPIN NOW</button>
+  <button class="share-btn" onclick="shareReward()">Share to 5 Groups to claim reward</button>
+  <button class="claim-btn">CLAIM REWARD</button>
+</div>
+
+<audio id="spinSound" src="https://assets.mixkit.co/sfx/preview/mixkit-slot-machine-spin-1936.mp3"></audio>
+<audio id="winSound" src="https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3"></audio>
+
+<script>
+const rewards=[
+  {text:"$300 Cash",img:"https://cdn-icons-png.flaticon.com/512/3135/3135706.png"},
+  {text:"iPhone 15",img:"https://cdn-icons-png.flaticon.com/512/831/831276.png"},
+  {text:"PS5",img:"https://cdn-icons-png.flaticon.com/512/686/686589.png"},
+  {text:"Try Again",img:"https://cdn-icons-png.flaticon.com/512/1828/1828843.png"},
+  {text:"Laptop",img:"https://cdn-icons-png.flaticon.com/512/1041/1041889.png"},
+  {text:"$500 Cash",img:"https://cdn-icons-png.flaticon.com/512/3135/3135706.png"},
+  {text:"Headphones",img:"https://cdn-icons-png.flaticon.com/512/727/727245.png"}
+];
+
+let spins=0;
+let angle=0;
+const canvas=document.getElementById("wheelCanvas");
+const ctx=canvas.getContext("2d");
+
+function drawWheel(){
+  const arc=2*Math.PI/rewards.length;
+  rewards.forEach((reward,i)=>{
+    const img=new Image();
+    img.src=reward.img;
+    ctx.beginPath();
+    ctx.fillStyle=`hsl(${i*50},80%,60%)`;
+    ctx.moveTo(150,150);
+    ctx.arc(150,150,150,i*arc,(i+1)*arc);
+    ctx.fill();
+    ctx.save();
+    ctx.translate(150,150);
+    ctx.rotate(i*arc+arc/2);
+    ctx.fillStyle="#000";
+    ctx.font="bold 12px Poppins";
+    ctx.fillText(reward.text,40,0);
+    img.onload=()=>{ctx.drawImage(img,60,-20,30,30)};
+    ctx.restore();
+  });
+}
+
+drawWheel();
+
+function spinWheel(){
+  if(navigator.vibrate) navigator.vibrate([200,100,200]);
+  document.getElementById("spinSound").play();
+
+  let index;
+  if(spins===0){
+    index=rewards.findIndex(r=>r.text==="Try Again");
+  }else{
+    index=0;
+  }
+
+  const degree=360*5+(360/rewards.length)*index;
+  angle+=degree;
+  canvas.style.transition="transform 4s ease-out";
+  canvas.style.transform=`rotate(${angle}deg)`;
+
+  setTimeout(()=>{
+    const reward=rewards[index];
+    document.getElementById("rewardText").innerText=reward.text;
+    document.getElementById("rewardImage").src=reward.img;
+    document.getElementById("rewardDisplay").style.display="block";
+
+    if(spins===0){
+      document.getElementById("mainContainer").classList.add("shake");
+      setTimeout(()=>{
+        document.getElementById("mainContainer").classList.remove("shake");
+      },500);
+    }else{
+      document.querySelector(".share-btn").style.display="block";
+      document.getElementById("winSound").play();
+      document.querySelector(".share-btn").scrollIntoView({behavior:"smooth"});
+    }
+
+    spins++;
+  },4000);
+}
+
+function shareReward(){
+  const url=encodeURIComponent(window.location.href);
+  const text=encodeURIComponent("I just won a reward! Try now!");
+  window.open(`https://wa.me/?text=${text}%20${url}`);
+  window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`);
+
+  setTimeout(()=>{
+    document.querySelector(".claim-btn").style.display="block";
+    document.querySelector(".claim-btn").scrollIntoView({behavior:"smooth"});
+  },3000);
+}
+
+// Countdown
+let totalTime=300;
+const timerEl=document.getElementById("timer");
+setInterval(()=>{
+  const m=Math.floor(totalTime/60);
+  const s=totalTime%60;
+  timerEl.textContent=`${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+  if(totalTime<=0){document.querySelector(".spin-btn").disabled=true}
+  totalTime--;
+},1000);
+</script>
+
+</body>
+</html>
